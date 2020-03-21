@@ -12,6 +12,7 @@
     "parcel-bundler": "^1.12.4"
   },
   "dependencies": {
+    "@reduxjs/toolkit": "^1.2.5",
     "p5": "^1.0.0"
   }
 }
