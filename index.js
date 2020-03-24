@@ -1,5 +1,6 @@
-const p5 = require('p5')
-import Timer from "./timer"
+import Timer from './timer'
+import('https://cdn.jsdelivr.net/npm/p5@1.0.0/lib/p5.min.js').then(
+  ({ default: p5 }) => main(p5)).catch(err => {console.log(err)})
 
 const COLORS = {
   peach: '#ffdebd',
@@ -129,5 +130,3 @@ const getHandPosition = (clockCenter, length, ratio) => {
   return [Math.sin(clockwiseAngle), -Math.cos(clockwiseAngle)].map(
     (x_or_y, i) => clockCenter[i] + length * x_or_y)
 }
-
-main()
