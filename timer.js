@@ -35,7 +35,7 @@ class Timer {
   constructor(state) {
     this.id = nextTimerId++
     const initialState = state || {
-      active: true,
+      active: false,
       elapsed: 0,
       round: 0,
       schedule: [
