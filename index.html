@@ -5,15 +5,29 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
 
-    <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous" />
+    <!-- Foundation CSS -->
+    <link rel="stylesheet" href="https://dhbhdrzi4tiry.cloudfront.net/cdn/sites/foundation.min.css">
 
     <link rel="icon" type="image/icp" href="favicon.png">
     <meta name="description" content="A generic timer for recurring rounds for your web browser with acoustic alarms.">
     <title>Versatimer</title>
   </head>
   <body>
-    <h1>Versatimer</h1>
+    <header class="top-bar">
+      <div class="top-bar-left">
+        <ul class="dropdown menu" data-dropdown-menu>
+          <li class="menu-text">Versatimer</li>
+        </ul>
+      </div>
+      <div class="top-bar-right">
+        <form id="config-form">
+          <ul class="menu">
+            <li><input type="text" name="config" placeholder="Configuration" id="config-input"></li>
+            <li><input type="submit" class="button" value="Submit"></li>
+          </ul>
+        </form>
+      </div>
+    </header>
     <div class="timer"></div>
     <audio src="static/alert.mp3" id="audio-alert" />
     <audio src="static/bell.mp3" id="audio-bell" />

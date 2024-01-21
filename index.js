@@ -1,4 +1,5 @@
 import Timer from './timer'
+import ClockDrawing from './clockDrawing'
 import('https://cdn.jsdelivr.net/npm/p5@1.0.0/lib/p5.min.js').then(
   ({ default: p5 }) => main(p5)).catch(err => {console.log(err)})
 
@@ -22,17 +23,41 @@ const SOUNDS = {
   work: 'alert',
 }
 
-const main = () => {
-  const timerRoots = document.getElementsByClassName('timer')
-  const timerP5s = Array.from(timerRoots).map(
-    root => new p5(initTimerSketch, root))
+const INITIAL_STATE = {
+  active: false,
+  elapsed: 0,
+  round: 0,
+  schedule: [
+    {work: 7, rest: 4, duration: 20},
+  ],
+  lastUpdate: Date.now(),
 }
 
-const initTimerSketch = (sketch) => {
-  const timer = new Timer()
+const main = () => {
+  const timerRoots = document.getElementsByClassName('timer')
+  const initialState = INITIAL_STATE
+  const timer = new Timer(initialState)
+  const clockDrawing = new ClockDrawing(timer)
+  const configForm = document.getElementById('config-form')
+  const configFormInput = document.getElementById('config-input')
+  configFormInput.value = JSON.stringify(initialState.schedule)
+  configForm.addEventListener('submit', onConfigSubmit(timer))
+  const timerP5s = Array.from(timerRoots).map(
+    root => new p5(initTimerSketch(timer, clockDrawing), root))
+}
+
+const onConfigSubmit = (timer, sketch) => e => {
+  e.preventDefault()
+  const formData = new FormData(e.target)
+  const config = JSON.parse(formData.get('config'))
+  timer.setStateAttr('schedule', config)
+}
+
+const initTimerSketch = (timer, clockDrawing) => sketch => {
   const sounds = Object.fromEntries(Object.entries(SOUNDS).map(
     ([key, name]) => [key, sketch.select('#audio-' + name).elt]))
   let working = false  // let the initial start of work register
+  let currentDrawingArea
 
   sketch.setup = () => {
     sketch.noFill()
@@ -44,23 +69,34 @@ const initTimerSketch = (sketch) => {
     timer.updateElapsed()
     const active = timer.active
     const pallette = active ? COLORS : COLORS_DISABLED
-    const elapsedRelative = timer.elapsedRelative
     const size = getTimerSize(sketch)
     const strokeWeight = 5 * size.scale
-    sketch.strokeWeight(strokeWeight)
     const clockMargin = strokeWeight
     const clockRadius = size.height / 2 - clockMargin
     const clockCenter = [size.width / 2, clockRadius + clockMargin]
-    const handLength = clockRadius - 2 * strokeWeight
-    const handPosition = getHandPosition(
-      clockCenter, handLength, elapsedRelative)
+    currentDrawingArea = [
+      // x1, y1, x2, y2
+      clockCenter[0] - clockRadius, clockCenter[1] - clockRadius,
+      clockCenter[0] + clockRadius, clockCenter[1] + clockRadius
+    ]
+    const {
+      handPosition, restArc, workArcs
+    } = clockDrawing.getParams(clockRadius, clockCenter, strokeWeight)
+    sketch.strokeWeight(strokeWeight)
     sketch.resizeCanvas(size.width, size.height)
     sketch.noStroke()
     sketch.fill(pallette.light)
     sketch.circle(...clockCenter, 2 * clockRadius)
     sketch.noFill()
     sketch.stroke(pallette.peach)  // rest
-    drawArcForDuration(sketch, ...clockCenter, clockRadius, 0, elapsedRelative)
+    sketch.arc(
+      ...clockCenter, 2 * clockRadius, 2 * clockRadius, ...restArc)
+    sketch.stroke(pallette.dark)  // work
+    workArcs.forEach(arc => sketch.arc(
+      ...clockCenter, 2 * clockRadius, 2 * clockRadius, ...arc))
+    sketch.circle(...clockCenter, strokeWeight)
+    sketch.line(...clockCenter, ...handPosition)
+
     const sessionSequenceRelative = timer.sessionSequenceRelative
     const latestPeriod = (
       sessionSequenceRelative[sessionSequenceRelative.length - 1])
@@ -68,18 +104,7 @@ const initTimerSketch = (sketch) => {
     if(latestPeriod) {
       working = latestPeriod.working
     }
-    sessionSequenceRelative.forEach(({duration, start, working: working_}) => {
-      if(!working_) {
-        return
-      }
-      sketch.stroke(pallette.dark)  // work
-      drawArcForDuration(
-        sketch, ...clockCenter, clockRadius, start, start + duration)
-    })
-    sketch.stroke(pallette.dark)
-    sketch.circle(...clockCenter, strokeWeight)
-    sketch.line(...clockCenter, ...handPosition)
-    if(!active && prevActive && elapsedRelative === 1) {
+    if(!active && prevActive && timer.elapsedRelative === 1) {
       sounds.end.play()
     } else if(working && !prevWorking) {
       sounds.work.play()
@@ -89,11 +114,20 @@ const initTimerSketch = (sketch) => {
   }
 
   sketch.mouseClicked = () => {
+    if(currentDrawingArea === undefined) return
+    const [x1, y1, x2, y2] = currentDrawingArea
+    if(
+      sketch.mouseX <= x1 || sketch.mouseX >= x2 ||
+      sketch.mouseY <= y1 || sketch.mouseY >= y2
+    ) return
     if(timer.active) {
       timer.pause()
       sketch.redraw()
       sketch.noLoop()
     } else {
+      if (timer.finished) {
+        timer.reset()
+      }
       timer.resume()
       sketch.loop()
     }
@@ -102,14 +136,6 @@ const initTimerSketch = (sketch) => {
   sketch.windowResized = () => {
     sketch.redraw()
   }
-}
-
-const drawArcForDuration = (sketch, x, y, radius, start, stop) => {
-  const angleUnit = 2 * Math.PI
-  const clockStartAngle = - angleUnit / 4
-  sketch.arc(
-    x, y, 2 * radius, 2 * radius,
-    clockStartAngle + start * angleUnit, clockStartAngle + stop * angleUnit)
 }
 
 const getTimerSize = ({windowWidth, windowHeight}) => {
@@ -123,10 +149,4 @@ const getTimerSize = ({windowWidth, windowHeight}) => {
     height: netWidth * netRatio,
     scale: netWidth / minWidth,
   }
-}
-
-const getHandPosition = (clockCenter, length, ratio) => {
-  const clockwiseAngle = ratio * 2 * Math.PI
-  return [Math.sin(clockwiseAngle), -Math.cos(clockwiseAngle)].map(
-    (x_or_y, i) => clockCenter[i] + length * x_or_y)
 }

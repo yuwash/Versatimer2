@@ -34,18 +34,9 @@ let nextTimerId = 1
 class Timer {
   constructor(state) {
     this.id = nextTimerId++
-    const initialState = state || {
-      active: false,
-      elapsed: 0,
-      round: 0,
-      schedule: [
-        {work: 7, rest: 4, duration: 20},
-      ],
-      lastUpdate: Date.now(),
-    }
     store.dispatch(timersSlice.actions.addTimer({
       key: this.id,
-      initialState,
+      initialState: state,
     }))
   }
 
@@ -79,6 +70,10 @@ class Timer {
 
   get sessionDuration() {
     return this.state.schedule.reduce((acc, {duration}) => acc + duration, 0)
+  }
+
+  get finished() {
+    return this.elapsed >= this.sessionDuration
   }
 
   get sessionSequence() {
@@ -143,6 +138,10 @@ class Timer {
     this.lastUpdate = Date.now()
     // don’t call updateElapsed because the time since pause should be
     // ignored
+  }
+
+  reset() {
+    this.elapsed = 0
   }
 
   updateElapsed() {
