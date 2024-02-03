@@ -18,7 +18,10 @@ class ClockDrawing {
       this.timer = timer
   }
 
-  getParams(clockRadius, clockCenter, strokeWeight) {
+  getParams(size, strokeWeight) {
+    const clockMargin = strokeWeight
+    const clockRadius = size.height / 2 - clockMargin
+    const clockCenter = [size.width / 2, clockRadius + clockMargin]
     const elapsedRelative = this.timer.elapsedRelative
     const handLength = clockRadius - 2 * strokeWeight
     const handPosition = getHandPosition(
@@ -34,7 +37,7 @@ class ClockDrawing {
         return arcs
       },
       [])
-    return { handPosition, restArc, workArcs }
+    return { clockCenter, clockRadius, handPosition, restArc, size, strokeWeight, workArcs }
   }
 }
 

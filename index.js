@@ -54,7 +54,27 @@ const onConfigSubmit = (timer, sketch) => e => {
   timer.setStateAttr('schedule', config)
 }
 
-const initTimerSketch = (timer, clockDrawing) => sketch => {
+const drawAnalogueClock = (sketch, clockDrawingParams, pallette) => {
+    const {
+      clockCenter, clockRadius, handPosition, restArc, size, strokeWeight, workArcs
+    } = clockDrawingParams
+    sketch.strokeWeight(strokeWeight)
+    sketch.resizeCanvas(size.width, size.height)
+    sketch.noStroke()
+    sketch.fill(pallette.light)
+    sketch.circle(...clockCenter, 2 * clockRadius)
+    sketch.noFill()
+    sketch.stroke(pallette.peach)  // rest
+    sketch.arc(
+      ...clockCenter, 2 * clockRadius, 2 * clockRadius, ...restArc)
+    sketch.stroke(pallette.dark)  // work
+    workArcs.forEach(arc => sketch.arc(
+      ...clockCenter, 2 * clockRadius, 2 * clockRadius, ...arc))
+    sketch.circle(...clockCenter, strokeWeight)
+    sketch.line(...clockCenter, ...handPosition)
+}
+
+const initTimerSketch = (timer, clockDrawing, pallette) => sketch => {
   const sounds = Object.fromEntries(Object.entries(SOUNDS).map(
     ([key, name]) => [key, sketch.select('#audio-' + name).elt]))
   let working = false  // let the initial start of work register
@@ -75,31 +95,14 @@ const initTimerSketch = (timer, clockDrawing) => sketch => {
     const pallette = active ? COLORS : COLORS_DISABLED
     const size = getTimerSize(sketch)
     const strokeWeight = 5 * size.scale
-    const clockMargin = strokeWeight
-    const clockRadius = size.height / 2 - clockMargin
-    const clockCenter = [size.width / 2, clockRadius + clockMargin]
+    const clockDrawingParams = clockDrawing.getParams(size, strokeWeight)
+    const {clockCenter, clockRadius} = clockDrawingParams
     currentDrawingArea = [
       // x1, y1, x2, y2
       clockCenter[0] - clockRadius, clockCenter[1] - clockRadius,
       clockCenter[0] + clockRadius, clockCenter[1] + clockRadius
     ]
-    const {
-      handPosition, restArc, workArcs
-    } = clockDrawing.getParams(clockRadius, clockCenter, strokeWeight)
-    sketch.strokeWeight(strokeWeight)
-    sketch.resizeCanvas(size.width, size.height)
-    sketch.noStroke()
-    sketch.fill(pallette.light)
-    sketch.circle(...clockCenter, 2 * clockRadius)
-    sketch.noFill()
-    sketch.stroke(pallette.peach)  // rest
-    sketch.arc(
-      ...clockCenter, 2 * clockRadius, 2 * clockRadius, ...restArc)
-    sketch.stroke(pallette.dark)  // work
-    workArcs.forEach(arc => sketch.arc(
-      ...clockCenter, 2 * clockRadius, 2 * clockRadius, ...arc))
-    sketch.circle(...clockCenter, strokeWeight)
-    sketch.line(...clockCenter, ...handPosition)
+    drawAnalogueClock(sketch, clockDrawingParams, pallette)
 
     if(!active && prevActive && timer.elapsedRelative === 1) {
       sounds.end.play()
