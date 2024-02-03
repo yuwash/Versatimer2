@@ -34,6 +34,10 @@ const INITIAL_STATE = {
   lastUpdate: Date.now(),
 }
 
+const UI_CONFIG = {
+  clock_style: 'combined',
+}
+
 const main = () => {
   const timerRoots = document.getElementsByClassName('timer')
   const initialState = INITIAL_STATE
@@ -54,9 +58,10 @@ const onConfigSubmit = (timer, sketch) => e => {
   timer.setStateAttr('schedule', config)
 }
 
-const drawAnalogueClock = (sketch, clockDrawingParams, pallette) => {
+const drawBasicClock = (sketch, clockDrawingParams, pallette) => {
+    // Classic analogue clock, with a hand showing the current time.
     const {
-      clockCenter, clockRadius, handPosition, restArc, size, strokeWeight, workArcs
+      clockCenter, clockRadius, restArc, size, strokeWeight, workArcs
     } = clockDrawingParams
     sketch.strokeWeight(strokeWeight)
     sketch.resizeCanvas(size.width, size.height)
@@ -70,8 +75,43 @@ const drawAnalogueClock = (sketch, clockDrawingParams, pallette) => {
     sketch.stroke(pallette.dark)  // work
     workArcs.forEach(arc => sketch.arc(
       ...clockCenter, 2 * clockRadius, 2 * clockRadius, ...arc))
-    sketch.circle(...clockCenter, strokeWeight)
-    sketch.line(...clockCenter, ...handPosition)
+}
+
+const drawAnalogueClock = (sketch, clockDrawingParams, pallette) => {
+    // Classic analogue clock, with a hand showing the current time.
+    drawBasicClock(sketch, clockDrawingParams, pallette)
+    const {
+      clockCenter, handPosition, strokeWeight
+    } = clockDrawingParams
+    sketch.circle(...clockCenter, strokeWeight)  // center dot
+    sketch.line(...clockCenter, ...handPosition)  // hand
+}
+
+const secondsToText = seconds => {
+  const hours = Math.floor(seconds / 3600)
+  const minutes = Math.floor(seconds / 60) % 60
+  const seconds_ = Math.floor(seconds % 60)
+  return (0 < hours ? [hours, minutes, seconds_] : [minutes, seconds_]).map(
+    x => x.toString().padStart(2, '0')
+  ).join(':')
+}
+
+const drawCombinedClock = (timer, sketch, clockDrawingParams, pallette) => {
+  // Numeric clock with a short “hand” at the clock edge. No dot at the center.
+  drawBasicClock(sketch, clockDrawingParams, pallette)
+  const {
+    clockCenter, clockRadius, handPosition, edgePosition, strokeWeight
+  } = clockDrawingParams
+  sketch.line(...handPosition, ...edgePosition)  // edge “hand”
+  sketch.textAlign(sketch.CENTER, sketch.CENTER)
+  sketch.textSize(clockRadius / 2)
+  sketch.fill(pallette.dark)
+  sketch.noStroke()
+  const remainingText = secondsToText(timer.remaining)
+  sketch.text(remainingText, ...clockCenter)
+  sketch.textSize(clockRadius / 4)
+  const sessionRemainingText = secondsToText(timer.sessionRemaining)
+  sketch.text(sessionRemainingText, clockCenter[0], clockCenter[1] + clockRadius * 3/8)
 }
 
 const initTimerSketch = (timer, clockDrawing, pallette) => sketch => {
@@ -102,7 +142,15 @@ const initTimerSketch = (timer, clockDrawing, pallette) => sketch => {
       clockCenter[0] - clockRadius, clockCenter[1] - clockRadius,
       clockCenter[0] + clockRadius, clockCenter[1] + clockRadius
     ]
-    drawAnalogueClock(sketch, clockDrawingParams, pallette)
+
+    
+    if(UI_CONFIG.clock_style === 'basic'){
+      drawBasicClock(sketch, clockDrawingParams, pallette)
+    } else if(UI_CONFIG.clock_style === 'analogue') {
+      drawAnalogueClock(sketch, clockDrawingParams, pallette)
+    } else if(UI_CONFIG.clock_style === 'combined') {
+      drawCombinedClock(timer, sketch, clockDrawingParams, pallette)
+    }
 
     if(!active && prevActive && timer.elapsedRelative === 1) {
       sounds.end.play()

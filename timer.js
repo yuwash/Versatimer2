@@ -79,6 +79,19 @@ class Timer {
     return this.state.schedule.reduce((acc, {duration}) => acc + duration, 0)
   }
 
+  get remaining() {
+    const sessionSequence = this.sessionSequence
+    const latestPeriod = (
+      sessionSequence[sessionSequence.length - 1])
+    return latestPeriod ? (
+      latestPeriod.start + latestPeriod.period - this.elapsed
+    ) : 0
+  }
+
+  get sessionRemaining() {
+    return this.sessionDuration - this.elapsed
+  }
+
   get finished() {
     return this.elapsed >= this.sessionDuration
   }
@@ -93,6 +106,7 @@ class Timer {
 	  const period = working ? work : rest
           let elapsedPeriodDuration = remainingElapsed
           const prevRemainingElapsed = remainingElapsed
+    const specificPeriod = Math.min(period, remainingDuration)
 	  if(remainingElapsed < period) {
 	    remainingElapsed = 0
 	    // remainingDuration, working don’t matter; loop ends
@@ -102,6 +116,7 @@ class Timer {
 	    remainingDuration -= period
 	  }
 	  acc.push({
+      period: specificPeriod,
 	    duration: elapsedPeriodDuration,
 	    start: elapsed - prevRemainingElapsed,
 	    working,

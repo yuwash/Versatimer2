@@ -26,6 +26,8 @@ class ClockDrawing {
     const handLength = clockRadius - 2 * strokeWeight
     const handPosition = getHandPosition(
         clockCenter, handLength, elapsedRelative)
+    const edgePosition = getHandPosition(
+        clockCenter, clockRadius, elapsedRelative)
     const restArc = getArcForDuration(0, elapsedRelative)
     const sessionSequenceRelative = this.timer.sessionSequenceRelative
     const workArcs = sessionSequenceRelative.reduce(
@@ -37,7 +39,7 @@ class ClockDrawing {
         return arcs
       },
       [])
-    return { clockCenter, clockRadius, handPosition, restArc, size, strokeWeight, workArcs }
+    return { clockCenter, clockRadius, handPosition, edgePosition, restArc, size, strokeWeight, workArcs }
   }
 }
 
