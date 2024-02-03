@@ -48,6 +48,13 @@ class Timer {
     this.setStateAttr('active', value)
   }
 
+  get working() {
+    const sessionSequence = this.sessionSequence
+    const latestPeriod = (
+      sessionSequence[sessionSequence.length - 1])
+    return latestPeriod ? latestPeriod.working : false
+  }
+
   get elapsed() {
     return this.state.elapsed
   }

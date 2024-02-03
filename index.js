@@ -25,6 +25,7 @@ const SOUNDS = {
 
 const INITIAL_STATE = {
   active: false,
+  working: false,
   elapsed: 0,
   round: 0,
   schedule: [
@@ -66,8 +67,11 @@ const initTimerSketch = (timer, clockDrawing) => sketch => {
 
   sketch.draw = () => {
     const prevActive = timer.active
+    const prevWorking = timer.working
     timer.updateElapsed()
     const active = timer.active
+    const working = timer.working
+
     const pallette = active ? COLORS : COLORS_DISABLED
     const size = getTimerSize(sketch)
     const strokeWeight = 5 * size.scale
@@ -97,13 +101,6 @@ const initTimerSketch = (timer, clockDrawing) => sketch => {
     sketch.circle(...clockCenter, strokeWeight)
     sketch.line(...clockCenter, ...handPosition)
 
-    const sessionSequenceRelative = timer.sessionSequenceRelative
-    const latestPeriod = (
-      sessionSequenceRelative[sessionSequenceRelative.length - 1])
-    const prevWorking = working
-    if(latestPeriod) {
-      working = latestPeriod.working
-    }
     if(!active && prevActive && timer.elapsedRelative === 1) {
       sounds.end.play()
     } else if(working && !prevWorking) {
